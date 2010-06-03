@@ -11,9 +11,23 @@ import Network.Beanstalk
 main :: IO ()
 main = do bs <- connectBeanstalk "localhost" "11300"
           simpleHTTP nullConf $ msum [
-                                     dir "tube" (showTubeList bs)
+                                     dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
+                                     ,dir "tube" (showTubeList bs)
                                      ,showServerStats bs -- default
                                      ]
+
+------------- Tube Info -------------
+showTubeInfo :: BeanstalkServer -> String -> ServerPart Response
+showTubeInfo bs tube = do tubeInfo <- liftIO (statsTube bs tube)
+                          ok $ toResponse $ tubeInfoHtml tubeInfo tube
+
+tubeInfoHtml :: M.Map String String -> String -> Html
+tubeInfoHtml stats name = body (concatHtml [h3 (stringToHtml ("Tube Stats for "++name)),statTable])
+    where
+      statTable = table (concatHtml rows)
+      rows = map (\(k,v) -> tr (concatHtml [(td (stringToHtml k)), (td (stringToHtml v))])) kv
+      kv = M.assocs stats
+-------------------------------------
 
 ------------- Server Stats ----------
 showServerStats :: BeanstalkServer -> ServerPart Response
@@ -39,12 +53,3 @@ tubeListHtml tubes = body (concatHtml [h3 (stringToHtml "Tubes"),tubeList])
       tubeList = ordList tubeItems
       tubeItems = map (\name -> hotlink ("/tube/"++name) (stringToHtml name)) tubes
 -------------------------------------
-
-tubeListStr bs = do lt <- liftIO (listTubes bs)
-                    ok (foldr (++) "" (intersperse "\n" lt))
-
-tubeInfoStr bs tubename = do stats <- liftIO (statsTube bs tubename)
-                             let kv = M.assocs stats
-                             let statslist = map (\(k,v) -> (k ++ " => " ++ v)) kv
-                             ok (foldr (++) "" (intersperse "\n" statslist))
-
