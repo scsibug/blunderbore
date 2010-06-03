@@ -37,7 +37,7 @@ tubeListHtml :: [String] -> Html
 tubeListHtml tubes = body (concatHtml [h3 (stringToHtml "Tubes"),tubeList])
     where
       tubeList = ordList tubeItems
-      tubeItems = map stringToHtml tubes
+      tubeItems = map (\name -> hotlink ("/tube/"++name) (stringToHtml name)) tubes
 -------------------------------------
 
 tubeListStr bs = do lt <- liftIO (listTubes bs)
