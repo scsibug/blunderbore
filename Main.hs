@@ -9,7 +9,8 @@ import Network.Beanstalk
 
 main :: IO ()
 main = do bs <- connectBeanstalk "localhost" "11300"
-          simpleHTTP nullConf $ msum [dir "tube" $ path $ \tubename -> (tubeInfoStr bs tubename)
+          simpleHTTP nullConf $ msum [dir "tube" $ path $ \tubename
+                                          -> (tubeInfoStr bs tubename)
                                      ,dir "tube" (tubeListStr bs)
                                      ,ok "Use /tube/tubename"
                                      ]
