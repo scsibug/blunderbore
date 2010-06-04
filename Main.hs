@@ -24,8 +24,8 @@ showTubeInfo bs tube = do tubeInfo <- liftIO $ statsTube bs tube
                           ok $ toResponse $ tubeInfoHtml tubeInfo tube
 
 tubeInfoHtml :: M.Map String String -> String -> Html
-tubeInfoHtml stats name = body $ h3 $ stringToHtml
-                          ("Tube Stats for "++name) +++ (tableFromMap stats)
+tubeInfoHtml stats name = body $ (h3 $ stringToHtml ("Tube Stats for "++name))
+                          +++ (tableFromMap stats)
 -------------------------------------
 
 ------------- Server Stats ----------
@@ -43,7 +43,7 @@ showTubeList bs = do tubes <- liftIO $ listTubes bs
                      ok $ toResponse $ tubeListHtml tubes
 
 tubeListHtml :: [String] -> Html
-tubeListHtml tubes = body $ h3 $ stringToHtml "Tubes" +++ (ordList tubeItems)
+tubeListHtml tubes = body $ (h3 $ stringToHtml "Tubes") +++ (ordList tubeItems)
     where
       tubeItems = map (\name -> hotlink ("/tube/"++name) (stringToHtml name)) tubes
 -------------------------------------
