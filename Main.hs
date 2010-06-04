@@ -13,10 +13,21 @@ main :: IO ()
 main = do bs <- connectBeanstalk "localhost" "11300"
           simpleHTTP nullConf $
                      msum [
-                           dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
+                           dir "job" $ path $ \job -> (showJobInfo bs job)
+                           ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
                            ,dir "tube" (showTubeList bs)
                            ,nullDir >> (showServerStats bs)
                           ]
+
+------------- Job Info --------------
+showJobInfo :: BeanstalkServer -> Int -> ServerPart Response
+showJobInfo bs job = do jobInfo <- liftIO $ statsJob bs job
+                        ok $ toResponse $ jobInfoHtml jobInfo (show job)
+
+jobInfoHtml :: M.Map String String -> String -> Html
+jobInfoHtml stats name = body $ (h3 $ stringToHtml ("Stats for Job #"++name))
+                          +++ (tableFromMap stats)
+-------------------------------------
 
 ------------- Tube Info -------------
 showTubeInfo :: BeanstalkServer -> String -> ServerPart Response
