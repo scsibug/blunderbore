@@ -49,7 +49,7 @@ tubeListHtml tubes = body $ h3 $ stringToHtml "Tubes" +++ (ordList tubeItems)
 -------------------------------------
 
 -- | Create a table showing key/value pairs
---tableFromMap :: M.Map String String -> Html
+tableFromMap :: M.Map String String -> Html
 tableFromMap m = table (concatHtml rows) where
     rows = map (\(k,v) -> tr $ td $ stringToHtml k +++ (td $ stringToHtml v)) kv
     kv = M.assocs m
