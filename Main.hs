@@ -16,10 +16,13 @@ import Data.List(intersperse)
 import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.Trans(liftIO)
+import Control.Concurrent (MVar, forkIO, killThread)
+import Control.Exception (bracket)
 import Happstack.Server
     (Conf(port), nullConf, simpleHTTP, ok, dir, path, ServerPart,
      toResponse, Response, nullDir, validator, wdgHTMLValidator
     )
+import Happstack.State (waitForTermination)
 import Text.XHtml.Transitional hiding (dir)
 import Network.Beanstalk
 
@@ -27,6 +30,7 @@ import System.Exit (exitWith, ExitCode(..), exitFailure)
 import System.Environment (getArgs)
 import System.Log.Logger (Priority(..), logM)
 import System.Console.GetOpt
+import App.Logger (withLogger)
 
 ------------------------------------------------------------------------------
 -- Server
@@ -49,14 +53,36 @@ defaultConf progName
               }
 
 main :: IO ()
-main = do bs <- connectBeanstalk "localhost" "11300"
-          simpleHTTP nullConf $
-                     msum [
-                           dir "job" $ path $ \job -> (showJobInfo bs job)
-                           ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
-                           ,dir "tube" (showTubeList bs)
-                           ,nullDir >> (showServerStats bs)
-                          ]
+main = withLogger $ do
+         flags <- parseConfig =<< getArgs
+         displayInfo flags
+         runServer flags
+
+runServer :: [Flag] -> IO ()
+runServer flags = do
+  let appConf = foldr ($) (defaultConf progName) [f | ServerConfig f <- flags]
+  bs <- connectBeanstalk "localhost" "11300"
+  withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
+          logM "Happstack.Server" NOTICE "System running, press 'e <ENTER>' or Ctrl-C to stop server" 
+          waitForTermination
+
+appHandler :: BeanstalkServer -> ServerPart Response
+appHandler bs = msum [
+                 dir "job" $ path $ \job -> (showJobInfo bs job)
+                ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
+                ,dir "tube" (showTubeList bs)
+                ,nullDir >> (showServerStats bs)
+                ]
+
+withThread init action = bracket (forkIO $ init) (killThread) (\_ -> action)
+
+-- | Display information required by flags. Currently, this is either the help
+-- message or the version information.
+displayInfo :: [Flag] -> IO ()
+displayInfo flags
+  | any isHelp    flags = putStr helpMessage >> exitWith ExitSuccess
+  | any isVersion flags = putStr versionInfo >> exitWith ExitSuccess
+  | otherwise           = return ()
 
 ------------- Job Info --------------
 showJobInfo :: BeanstalkServer -> Int -> ServerPart Response
