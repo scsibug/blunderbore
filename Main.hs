@@ -40,11 +40,10 @@ import App.Logger (withLogger)
 data AppConf
     = AppConf { httpConf :: Conf
               , store :: FilePath
-              , static :: FilePath 
+              , static :: FilePath
               }
 
 -- | Default configuration
--- FIXME: Should incorporate directories queried via Paths_guestbook module
 defaultConf :: String -> AppConf
 defaultConf progName
     = AppConf { httpConf = nullConf
@@ -63,7 +62,7 @@ runServer flags = do
   let appConf = foldr ($) (defaultConf progName) [f | ServerConfig f <- flags]
   bs <- connectBeanstalk "localhost" "11300"
   withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
-          logM "Happstack.Server" NOTICE "System running, press 'e <ENTER>' or Ctrl-C to stop server" 
+          logM "Happstack.Server" NOTICE "System running, press 'e <ENTER>' or Ctrl-C to stop server"
           waitForTermination
 
 appHandler :: BeanstalkServer -> ServerPart Response
@@ -134,7 +133,7 @@ tableFromMap m = table (concatHtml rows) where
 -- Command Line Interface Content
 ------------------------------------------------------------------------------
 
--- | Program name used to identify your application. 
+-- | Program name used to identify your application.
 -- It influences the version and help message, as well as the directory name
 -- for the state of your application.
 progName = "blunderbore"
@@ -176,9 +175,9 @@ opts = [ Option [] ["http-port"]   (ReqArg setPort "port")                      
        , Option [] ["no-validate"] (NoArg $ setValidator Nothing)                 "Turn off HTML validation"
        , Option [] ["validate"]    (NoArg $ setValidator (Just wdgHTMLValidator)) "Turn on HTML validation"
        , Option [] ["store"]       (ReqArg setMacidDir "PATH")                    "The directory used for database storage."
-       , Option [] ["static"]      (ReqArg setStaticDir "PATH")                   "The directory searched for static files" 
-       , Option [] ["version"]     (NoArg Version)                                "Display version information" 
-       , Option [] ["help"]        (NoArg Help)                                   "Display this help message" 
+       , Option [] ["static"]      (ReqArg setStaticDir "PATH")                   "The directory searched for static files"
+       , Option [] ["version"]     (NoArg Version)                                "Display version information"
+       , Option [] ["help"]        (NoArg Help)                                   "Display this help message"
        ]
      where
      setPort p      = ServerConfig $ \c -> c { httpConf = (httpConf c) {port      = read p} }
