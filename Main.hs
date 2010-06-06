@@ -22,6 +22,16 @@ import Happstack.Server
     (Conf(port), nullConf, simpleHTTP, ok, dir, path, ServerPart,
      toResponse, Response, nullDir, validator, wdgHTMLValidator
     )
+import Happstack.State
+  ( Component
+  , Proxy(..)
+  , Methods
+  , TxControl
+  , Saver(Queue, FileSaver)
+  , runTxSystem
+  , shutdownSystem
+  , createCheckpoint
+  )
 import Happstack.State (waitForTermination)
 
 import Network.Beanstalk
@@ -31,7 +41,7 @@ import System.Environment (getArgs)
 import System.Log.Logger (Priority(..), logM)
 import System.Console.GetOpt
 import App.Logger (withLogger)
-import App.State
+import App.State (Stat)
 import App.Controller (appHandler)
 
 ------------------------------------------------------------------------------
@@ -63,11 +73,28 @@ runServer :: [Flag] -> IO ()
 runServer flags = do
   let appConf = foldr ($) (defaultConf progName) [f | ServerConfig f <- flags]
   bs <- connectBeanstalk "localhost" "11300"
+  withSystemState' (store appConf) stateProxy $ \control -> do
   withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
           logM "Happstack.Server" NOTICE "System running, press 'e <ENTER>' or Ctrl-C to stop server"
           waitForTermination
+  where
+  startSystemState' :: (Component st, Methods st) => String -> Proxy st -> IO (MVar TxControl)
+  startSystemState' = runTxSystem . Queue . FileSaver
 
-withThread init action = bracket (forkIO $ init) (killThread) (\_ -> action)
+  withSystemState' :: (Component st, Methods st) => String -> Proxy st -> (MVar TxControl -> IO a) -> IO a
+  withSystemState' name proxy action =
+    bracket (startSystemState' name proxy) createCheckpointAndShutdown action
+
+  withThread init action = bracket (forkIO $ init) (killThread) (\_ -> action)
+
+  createCheckpointAndShutdown control = do
+    logM "Happstack.Server" NOTICE "Creating system checkpoint"
+    createCheckpoint control
+    logM "Happstack.Server" NOTICE "System shutdown"
+    shutdownSystem control
+
+  stateProxy :: Proxy Stat
+  stateProxy = Proxy
 
 -- | Display information required by flags. Currently, this is either the help
 -- message or the version information.
@@ -76,7 +103,6 @@ displayInfo flags
   | any isHelp    flags = putStr helpMessage >> exitWith ExitSuccess
   | any isVersion flags = putStr versionInfo >> exitWith ExitSuccess
   | otherwise           = return ()
-
 
 ------------------------------------------------------------------------------
 -- Command Line Interface Content
@@ -89,7 +115,7 @@ progName = "blunderbore"
 
 fullName = "Blunderbore"
 
-copyrightInfo = "Copyright (C) 2009 Greg Heartsfield"
+copyrightInfo = "Copyright (C) 2010 Greg Heartsfield"
 licenceInfo = "BSD3"
 
 -- | Version information
