@@ -31,6 +31,7 @@ import System.Environment (getArgs)
 import System.Log.Logger (Priority(..), logM)
 import System.Console.GetOpt
 import App.Logger (withLogger)
+import App.State
 
 ------------------------------------------------------------------------------
 -- Server
