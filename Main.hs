@@ -18,6 +18,7 @@ import Control.Monad
 import Control.Monad.Trans(liftIO)
 import Control.Concurrent (MVar, forkIO, killThread)
 import Control.Exception (bracket)
+import Happstack.Util.Cron (cron)
 import Happstack.Server
     (Conf(port), nullConf, simpleHTTP, ok, dir, path, ServerPart,
      toResponse, Response, nullDir, validator, wdgHTMLValidator
@@ -75,7 +76,12 @@ runServer flags = do
   bs <- connectBeanstalk "localhost" "11300"
   withSystemState' (store appConf) stateProxy $ \control -> do
   withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
-          logM "Happstack.Server" NOTICE "System running, press 'e <ENTER>' or Ctrl-C to stop server"
+          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
+          waitForTermination
+       -- checkpoint the state once a day
+  withThread (cron (60*60*24) (createCheckpoint control)) $ do
+          -- wait for termination signal
+          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
           waitForTermination
   where
   startSystemState' :: (Component st, Methods st) => String -> Proxy st -> IO (MVar TxControl)
