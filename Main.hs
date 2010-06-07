@@ -75,19 +75,18 @@ runServer :: [Flag] -> IO ()
 runServer flags = do
   let appConf = foldr ($) (defaultConf progName) [f | ServerConfig f <- flags]
   bs <- connectBeanstalk "localhost" "11300"
+  -- Start state system
   withSystemState' (store appConf) stateProxy $ \control -> do
     -- Get server stats
     withThread (cron 1 (updateStatsService control bs)) $ do
       logM "Happstack.Server" NOTICE "Starting cron service"
-      waitForTermination
     -- Checkpoint server state once a day
-    withThread (cron (60*60*24) (createCheckpoint control)) $ do
-      logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
-      waitForTermination
-    -- Start HTTP server
-    withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
-      logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
-      waitForTermination
+      withThread (cron (60*60*24) (createCheckpoint control)) $ do
+        logM "Happstack.Server" NOTICE "Starting checkpoint service"
+        -- Start HTTP server
+        withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
+          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
+          waitForTermination
   where
   startSystemState' :: (Component st, Methods st) => String -> Proxy st -> IO (MVar TxControl)
   startSystemState' = runTxSystem . Queue . FileSaver
