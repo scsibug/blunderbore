@@ -43,6 +43,7 @@ import System.Log.Logger (Priority(..), logM)
 import System.Console.GetOpt
 import App.Logger (withLogger)
 import App.State (Stat)
+import App.StatService (updateStatsService)
 import App.Controller (appHandler)
 
 ------------------------------------------------------------------------------
@@ -75,14 +76,18 @@ runServer flags = do
   let appConf = foldr ($) (defaultConf progName) [f | ServerConfig f <- flags]
   bs <- connectBeanstalk "localhost" "11300"
   withSystemState' (store appConf) stateProxy $ \control -> do
-  withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
-          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
-          waitForTermination
-       -- checkpoint the state once a day
-  withThread (cron (60*60*24) (createCheckpoint control)) $ do
-          -- wait for termination signal
-          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
-          waitForTermination
+    -- Get server stats
+    withThread (cron 1 (updateStatsService control bs)) $ do
+      logM "Happstack.Server" NOTICE "Starting cron service"
+      waitForTermination
+    -- Checkpoint server state once a day
+    withThread (cron (60*60*24) (createCheckpoint control)) $ do
+      logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
+      waitForTermination
+    -- Start HTTP server
+    withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
+      logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
+      waitForTermination
   where
   startSystemState' :: (Component st, Methods st) => String -> Proxy st -> IO (MVar TxControl)
   startSystemState' = runTxSystem . Queue . FileSaver
