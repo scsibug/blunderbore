@@ -8,6 +8,9 @@ import Network.Beanstalk
 import App.State
 
 --updateStatsService :: MVar TxControl -> BeanstalkServer -> IO ()
-updateStatsService control bs =
+updateStatsService state bs =
     do st <- statsServer bs
+       update $ AddStat 4
+       stats <- query $ GetStats
+       putStrLn (show stats)
        logM "Happstack.Server" NOTICE "Cron Job Running"
