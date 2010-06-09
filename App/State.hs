@@ -2,6 +2,16 @@
     FlexibleInstances, MultiParamTypeClasses, FlexibleContexts,
     UndecidableInstances
     #-}
+-----------------------------------------------------------------------------
+--
+-- Module      :  Blunderbore App State
+-- Copyright   :  (c) Greg Heartsfield 2010
+-- License     :  BSD3
+--
+-- MACID State for Beanstalk historical stats
+--
+-----------------------------------------------------------------------------
+
 module App.State where
 import Happstack.Data
 import Happstack.State
