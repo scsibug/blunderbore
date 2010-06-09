@@ -18,7 +18,6 @@ import System.Log.Logger (Priority(..), logM)
 import Network.Beanstalk
 import App.State
 
-
 updateStatsService :: MVar TxControl -> BeanstalkServer -> IO ()
 updateStatsService state bs =
     do st <- statsServer bs
