@@ -37,7 +37,7 @@ import System.Log.Logger (Priority(..), logM)
 import System.Console.GetOpt
 import App.Logger (withLogger)
 import App.State (Stat)
-import App.StatService (updateStatsService)
+import App.StatService (updateStatsService, trimStatsService)
 import App.Controller (appHandler)
 
 ------------------------------------------------------------------------------
@@ -72,15 +72,18 @@ runServer flags = do
   -- Start state system
   withSystemState' (store appConf) stateProxy $ \control -> do
     -- Get server stats
-    withThread (cron 1 (updateStatsService control bs)) $ do
-      logM "Happstack.Server" NOTICE "Starting cron service"
-    -- Checkpoint server state once a day
-      withThread (cron (60*60*24) (createCheckpoint control)) $ do
-        logM "Happstack.Server" NOTICE "Starting checkpoint service"
-        -- Start HTTP server
-        withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
-          logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
-          waitForTermination
+    withThread (cron 1 (updateStatsService bs)) $ do
+      logM "Happstack.Server" NOTICE "Starting stat cron service"
+      -- Remove old stats less frequently
+      withThread (cron 10 trimStatsService) $ do
+        logM "Happstack.Server" NOTICE "Starting cleanup cron service"
+      -- Checkpoint server state once a day
+        withThread (cron (60*60*24) (createCheckpoint control)) $ do
+          logM "Happstack.Server" NOTICE "Starting checkpoint service"
+          -- Start HTTP server
+          withThread (simpleHTTP (httpConf appConf) (appHandler bs)) $ do
+            logM "Happstack.Server" NOTICE "System running, press Ctrl-C to stop server"
+            waitForTermination
   where
   startSystemState' :: (Component st, Methods st) => String -> Proxy st -> IO (MVar TxControl)
   startSystemState' = runTxSystem . Queue . FileSaver
