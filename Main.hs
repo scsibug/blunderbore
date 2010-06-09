@@ -24,14 +24,8 @@ import Happstack.Server
      toResponse, Response, nullDir, validator, wdgHTMLValidator
     )
 import Happstack.State
-  ( Component
-  , Proxy(..)
-  , Methods
-  , TxControl
-  , Saver(Queue, FileSaver)
-  , runTxSystem
-  , shutdownSystem
-  , createCheckpoint
+  (Component, Proxy(..), Methods, TxControl, Saver(Queue, FileSaver),
+   runTxSystem, shutdownSystem, createCheckpoint, waitForTermination
   )
 import Happstack.State (waitForTermination)
 
