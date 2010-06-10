@@ -13,7 +13,6 @@ module App.StatService (updateStatsService,trimStatsService) where
 import Happstack.Data
 import Happstack.State
 import Data.Data (Data)
-import Control.Concurrent (MVar)
 import System.Log.Logger (infoM,noticeM)
 import Network.Beanstalk
 import App.State

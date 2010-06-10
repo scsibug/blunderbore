@@ -76,7 +76,7 @@ $(deriveSerialize ''TubeStat)
 
 type TubeStats = M.Map String TubeStat
 
-data Stat = Stat { readyJobs :: [(ClockTime,ServerStat,M.Map String TubeStat)] }
+data Stat = Stat { stateHistory :: [(ClockTime,ServerStat,M.Map String TubeStat)] }
             deriving (Typeable, Data)
 
 instance Version Stat

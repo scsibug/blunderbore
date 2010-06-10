@@ -1,25 +1,32 @@
 module App.Controller (appHandler) where
 
-import Data.List(intersperse)
+import Data.List(intercalate)
 import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.Trans(liftIO)
+import Control.Monad.Reader (ask)
+import Control.Monad.State (modify, get, put)
+import Happstack.State
 import Happstack.Server
     (Conf(port), nullConf, simpleHTTP, ok, dir, path, ServerPart,
      toResponse, Response, nullDir)
 import Happstack.Server.HTTP.FileServe(fileServeStrict)
 import Text.XHtml.Transitional hiding (dir)
+import Data.List(intersperse)
+import System.Time
+import System.Locale
 import Network.Beanstalk
+import App.State
 
 appHandler :: BeanstalkServer -> ServerPart Response
 appHandler bs = msum [
                  dir "job" $ path $ \job -> (showJobInfo bs job)
                 ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
                 ,dir "tube" (showTubeList bs)
+                ,dir "server" $ dir "stats" $ dir "csv" $ showServerStatsCSV
                 ,dir "static" $ fileServeStrict [] "static"
                 ,nullDir >> (showServerStats bs)
                 ]
-
 
 ------------- Job Info --------------
 showJobInfo :: BeanstalkServer -> Int -> ServerPart Response
@@ -48,6 +55,23 @@ showServerStats bs = do stats <- liftIO $ statsServer bs
 
 statsHtml :: M.Map String String -> Html
 statsHtml stats = body (h3 $ stringToHtml "Server Stats") +++ (tableFromMap stats)
+
+showServerStatsCSV :: ServerPart Response
+showServerStatsCSV =
+    do stats <- query $ GetStats
+       let header = "utc_date,js_timestamp, urgent_jobs, ready_jobs, reserved_jobs, delayed_jobs, buried_jobs, total_jobs\n"
+       let statsrows = map (\(x,y,z) -> (utcFromClockTime x)++","++(show $ ctToJSTS x)++","++(serverstatline y)) stats
+               where serverstatline a = intercalate "," $ map (\x -> show(x a)) [srvUrgentJobs,srvReadyJobs,srvReservedJobs,srvDelayedJobs,srvBuriedJobs,srvTotalJobs]
+       return $ toResponse $ header++(unlines statsrows)
+
+-- | ClockTime to a javascript timestamp (milliseconds since Jan 1 1970)
+ctToJSTS :: ClockTime -> Integer
+ctToJSTS (TOD sec _) = sec * 1000
+
+utcFromClockTime :: ClockTime -> String
+utcFromClockTime c = calendarTimeToString utc_time
+    where utc_time = (toUTCTime c) {ctTZName = "GMT"}
+
 -------------------------------------
 
 ------------- Tube List -------------
