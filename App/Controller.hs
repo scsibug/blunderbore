@@ -13,6 +13,8 @@ import Happstack.Server
 import Happstack.Server.HTTP.FileServe(fileServeStrict)
 import Text.XHtml.Transitional hiding (dir)
 import Data.List(intersperse)
+--import Data.Yaml.Syck
+import Text.JSON
 import System.Time
 import System.Locale
 import Network.Beanstalk
@@ -24,6 +26,7 @@ appHandler bs = msum [
                 ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
                 ,dir "tube" (showTubeList bs)
                 ,dir "server" $ dir "stats" $ dir "csv" $ showServerStatsCSV
+                ,dir "server" $ dir "stats" $ dir "json" $ showServerStatsJson
                 ,dir "static" $ fileServeStrict [] "static"
                 ,nullDir >> (showServerStats bs)
                 ]
@@ -63,6 +66,14 @@ showServerStatsCSV =
        let statsrows = map (\(x,y,z) -> (utcFromClockTime x)++","++(show $ ctToJSTS x)++","++(serverstatline y)) stats
                where serverstatline a = intercalate "," $ map (\x -> show(x a)) [srvUrgentJobs,srvReadyJobs,srvReservedJobs,srvDelayedJobs,srvBuriedJobs,srvTotalJobs]
        return $ toResponse $ header++(unlines statsrows)
+
+showServerStatsJson :: ServerPart Response
+showServerStatsJson =
+    do stats <- query $ GetStats
+       let times = map (\(x,_,_) -> JSRational False $ toRational $ ctToJSTS x) stats
+       let readyJobs = map (\(_,y,_) -> JSRational False $ toRational $ srvReadyJobs y) stats
+       let series = map (\(t,j) -> JSArray [t,j])  (zip times readyJobs)
+       return $ toResponse $ encode series
 
 -- | ClockTime to a javascript timestamp (milliseconds since Jan 1 1970)
 ctToJSTS :: ClockTime -> Integer
