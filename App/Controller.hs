@@ -7,6 +7,7 @@ import Control.Monad.Trans(liftIO)
 import Happstack.Server
     (Conf(port), nullConf, simpleHTTP, ok, dir, path, ServerPart,
      toResponse, Response, nullDir)
+import Happstack.Server.HTTP.FileServe(fileServeStrict)
 import Text.XHtml.Transitional hiding (dir)
 import Network.Beanstalk
 
@@ -15,6 +16,7 @@ appHandler bs = msum [
                  dir "job" $ path $ \job -> (showJobInfo bs job)
                 ,dir "tube" $ path $ \tube -> (showTubeInfo bs tube)
                 ,dir "tube" (showTubeList bs)
+                ,dir "static" $ fileServeStrict [] "static"
                 ,nullDir >> (showServerStats bs)
                 ]
 
