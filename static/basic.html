@@ -18,11 +18,17 @@ fetchData();
 function onDataReceived(series) {
   var data = [series]
   var options = {
-    xaxis: { mode: "time" }
+    series: {
+      lines: { show: true },
+      points: { show: true }
+    },
+    grid: { hoverable: true, clickable: true },
+    xaxis: { mode: "time",
+    }
   };
 
  $.plot($("#placeholder"), data, options);
- setTimeout(fetchData, 1500);
+ setTimeout(fetchData, 1000);
 };
 
 function fetchData() {
@@ -31,6 +37,49 @@ $.ajax({ url: "/server/stats/json",
          success: onDataReceived
 });
 };
+
+ function showTooltip(x, y, contents) {
+        $('<div id="tooltip">' + contents + '</div>').css( {
+            position: 'absolute',
+            display: 'none',
+            top: y + 10,
+            left: x + 10,
+            border: '1px solid #fdd',
+            padding: '2px',
+            'background-color': '#fee',
+            opacity: 0.80
+        }).appendTo("body").fadeIn(200);
+    }
+
+    var previousPoint = null;
+    $("#placeholder").bind("plothover", function (event, pos, item) {
+        $("#x").text(pos.x.toFixed(2));
+        $("#y").text(pos.y.toFixed(2));
+
+            if (item) {
+                if (previousPoint != item.datapoint) {
+                    previousPoint = item.datapoint;
+                    
+                    $("#tooltip").remove();
+                    var x = item.datapoint[0].toFixed(2),
+                        y = item.datapoint[1].toFixed(2);
+                    
+                    showTooltip(item.pageX, item.pageY,parseInt(y));
+                }
+            }
+            else {
+                $("#tooltip").remove();
+                previousPoint = null;            
+            }
+
+    });
+
+    $("#placeholder").bind("plotclick", function (event, pos, item) {
+        if (item) {
+            plot.highlight(item.series, item.datapoint);
+        }
+    });
+
 
 </script> 
 </body> 
