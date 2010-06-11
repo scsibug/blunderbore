@@ -19,7 +19,7 @@ import App.State
 import qualified Data.Map as M
 import Data.Maybe(fromJust)
 
-maxStats = 10000
+maxStats = 120
 
 updateStatsService :: BeanstalkServer -> IO ()
 updateStatsService bs =

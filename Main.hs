@@ -74,8 +74,8 @@ runServer flags = do
     -- Get server stats
     withThread (cron 1 (updateStatsService bs)) $ do
       logM "Happstack.Server" NOTICE "Starting stat cron service"
-      -- Remove old stats less frequently
-      withThread (cron 10 trimStatsService) $ do
+      -- Remove old stats (possibly) less frequently
+      withThread (cron 1 trimStatsService) $ do
         logM "Happstack.Server" NOTICE "Starting cleanup cron service"
       -- Checkpoint server state once a day
         withThread (cron (60*60*24) (createCheckpoint control)) $ do
