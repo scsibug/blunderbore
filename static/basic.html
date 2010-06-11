@@ -1,0 +1,37 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd"> 
+<html> 
+ <head> 
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+    <title>Beanstalk Ready Jobs</title> 
+    <link href="layout.css" rel="stylesheet" type="text/css" />
+    <!--[if IE]><script language="javascript" type="text/javascript" src="javascript/excanvas.min.js"></script><![endif]--> 
+    <script language="javascript" type="text/javascript" src="javascript/jquery-1.4.2.min.js"></script> 
+    <script language="javascript" type="text/javascript" src="javascript/jquery.flot.min.js"></script> 
+ </head> 
+    <body> 
+    <h1>Beanstalk Ready Jobs</h1> 
+ 
+    <div id="placeholder" style="width:1100px;height:600px;"></div> 
+ 
+<script id="source" language="javascript" type="text/javascript"> 
+fetchData();
+function onDataReceived(series) {
+  var data = [series]
+  var options = {
+    xaxis: { mode: "time" }
+  };
+
+ $.plot($("#placeholder"), data, options);
+ setTimeout(fetchData, 1500);
+};
+
+function fetchData() {
+$.ajax({ url: "/server/stats/json",
+         dataType: "json",
+         success: onDataReceived
+});
+};
+
+</script> 
+</body> 
+</html> 
