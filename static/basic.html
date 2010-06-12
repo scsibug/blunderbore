@@ -23,8 +23,8 @@ function onDataReceived(series) {
       points: { show: true }
     },
     grid: { hoverable: true, clickable: true },
-    xaxis: { mode: "time",
-    }
+    xaxis: { mode: "time" },
+    yaxis: { min: 0 }
   };
 
  $.plot($("#placeholder"), data, options);
