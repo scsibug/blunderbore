@@ -32,11 +32,11 @@ updateStatsService bs =
                 (getStat "total-jobs")
                     where getStat a = read $ fromJust $ M.lookup a st
        stats <- query $ GetStats
-       noticeM "Happstack.Server" ("Stat count: "++(show (length stats)))
+       infoM "Happstack.Server" ("Stat count: "++(show (length stats)))
        update $ AddStat ss M.empty
-       noticeM "Happstack.Server" "Stats updated"
+       infoM "Happstack.Server" "Stats updated"
 
 trimStatsService :: IO ()
 trimStatsService =
     do update $ TrimStats maxStats
-       noticeM "Happstack.Server" "Removed old stats"
+       infoM "Happstack.Server" "Removed old stats"
