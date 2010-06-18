@@ -11,17 +11,18 @@
     <body> 
     <h1>Beanstalk Ready Jobs</h1> 
  
-    <div id="placeholder" style="width:1100px;height:600px;"></div> 
+    <div id="placeholder" style="width:1100px;height:500px;"></div> 
  
 <script id="source" language="javascript" type="text/javascript"> 
 fetchData();
 function onDataReceived(series) {
-  var data = [series]
+  var data = series
   var options = {
     series: {
       lines: { show: true },
       points: { show: true }
     },
+    legend: {show: true, position:"nw", backgroundOpacity: 0.4,margin:[30,150]},
     grid: { hoverable: true, clickable: true },
     xaxis: { mode: "time" },
     yaxis: { min: 0 }

@@ -71,9 +71,19 @@ showServerStatsJson :: ServerPart Response
 showServerStatsJson =
     do stats <- query $ GetStats
        let times = map (\(x,_,_) -> JSRational False $ toRational $ ctToJSTS x) stats
-       let readyJobs = map (\(_,y,_) -> JSRational False $ toRational $ srvReadyJobs y) stats
-       let series = map (\(t,j) -> JSArray [t,j])  (zip times readyJobs)
+       let filterJobs jobf = map (\(_,y,_) -> JSRational False $ toRational $ jobf y) stats
+       let makeSeries jobtype = map(\(t,j) -> JSArray [t,j]) (zip times (filterJobs jobtype))
+       let seriesWithLabel label series = showJSON $ toJSObject [("label",showJSON (toJSString label)),("data",series)]
+       let series = JSArray [
+                     seriesWithLabel "Urgent" (JSArray (makeSeries srvUrgentJobs)),
+                     seriesWithLabel "Ready" (JSArray (makeSeries srvReadyJobs)),
+                     seriesWithLabel "Reserved" (JSArray (makeSeries srvReservedJobs)),
+                     seriesWithLabel "Delayed" (JSArray (makeSeries srvDelayedJobs)),
+                     seriesWithLabel "Buried" (JSArray (makeSeries srvBuriedJobs))
+                    ]
+
        return $ toResponse $ encode series
+
 
 -- | ClockTime to a javascript timestamp (milliseconds since Jan 1 1970)
 ctToJSTS :: ClockTime -> Integer
